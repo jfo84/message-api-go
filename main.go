@@ -51,7 +51,7 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 	var messageRunes []rune
 	messageCounter := 0
 
-	// 154 is 160 runes minus 6 to add a message like " (1/3)"
+	// 154 is 160 runes minus 6 to add a message to each body like " (1/3)"
 	const runeLimit = 154
 
 	dataRunes := []rune(message.Data)
@@ -68,8 +68,8 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 			// Runes vs. bytes doesn't matter here since we're adding a known string that
 			// doesn't have multi-byte runes, e.g. Chinese characters
 			counterString := createCounterString(messageNum, messageCounter)
-			// String concatenation is fastest and zero-allocation last time
-			// I checked: https://gist.github.com/dtjm/c6ebc86abe7515c988ec
+			// It looks dirty but string concatenation is fastest and
+			// zero-allocation: https://gist.github.com/dtjm/c6ebc86abe7515c988ec
 			body = body + counterString
 
 			message, err := client.NewMessage(
@@ -83,7 +83,7 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Clear the slice of runes and increment the messageCounter
-			messageRunes := messageRunes[:0]
+			messageRunes = messageRunes[:0]
 			messageCounter++
 		}
 
