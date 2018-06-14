@@ -57,13 +57,13 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 	dataRunes := []rune(message.Data)
 	dataLen := len(dataRunes)
 
-	// This "just works" and we don't have to use floats
+	// This "just works" and we don't have to use floats and rounding
 	messageNum := (dataLen / runeLimit) + 1
 
 	for idx, rune := range dataRunes {
 		messageRunes[idx] = rune
 
-		if len(messageRunes) == 154 {
+		if (len(messageRunes) == runeLimit) || (idx == dataLen-1) {
 			body := string(messageRunes)
 			// Runes vs. bytes doesn't matter here since we're adding a known string that
 			// doesn't have multi-byte runes, e.g. Chinese characters
