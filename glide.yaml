@@ -1,0 +1,6 @@
+package: .
+import:
+- package: github.com/gorilla/mux
+  version: ^1.6.2
+- package: github.com/messagebird/go-rest-api
+  version: ^3.0.0

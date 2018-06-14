@@ -1,0 +1,10 @@
+hash: 51ee0e2103a0b3d8aed027d713f5a97d70e914a17a698f10142447e211f01930
+updated: 2018-06-14T12:12:52.604812023+02:00
+imports:
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
+- name: github.com/messagebird/go-rest-api
+  version: a505e01a7789c134e09737b4ed78aff748848259
+testImports: []
