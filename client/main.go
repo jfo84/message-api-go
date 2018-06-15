@@ -129,3 +129,11 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) {
 
 	}
 }
+
+// New returns a *Wrapper for re-use of the client object
+func (wrap *Wrapper) New() *Wrapper {
+	client := messagebird.New("test_22sWNIUrVGyI3J2IheE4SpwUc")
+	wrapper := &Wrapper{client: client}
+
+	return wrapper
+}

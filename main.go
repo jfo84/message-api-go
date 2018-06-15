@@ -4,17 +4,15 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jfo84/message-api-go/api/message"
-	messagebird "github.com/messagebird/go-rest-api"
+	"github.com/jfo84/message-api-go/message"
 )
 
 func main() {
 	r := mux.NewRouter().StrictSlash(true)
-	client := messagebird.New("test_22sWNIUrVGyI3J2IheE4SpwUc")
+	clientWrap := client.New()
 
-	// TODO: Needs client wrapper, not client
-	messageController := message.NewController(client)
-	r.HandleFunc("/messages", messageHandler).Methods("POST")
+	messageController := message.NewController(clientWrap)
+	r.HandleFunc("/messages", messageControler.Post).Methods("POST")
 
 	addr := ":7000"
 	err := http.ListenAndServe(addr, r)
