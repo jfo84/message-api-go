@@ -4,3 +4,5 @@ import:
   version: ^1.6.2
 - package: github.com/messagebird/go-rest-api
   version: ^3.0.0
+- package: github.com/didip/tollbooth
+  version: ^4.0.0

@@ -1,6 +1,8 @@
-hash: 51ee0e2103a0b3d8aed027d713f5a97d70e914a17a698f10142447e211f01930
-updated: 2018-06-14T12:12:52.604812023+02:00
+hash: 0dd6d7a914b3abc962d6672192ac95762760f670b1f459782b1bcc43dce04b56
+updated: 2018-06-15T14:10:46.043940421+02:00
 imports:
+- name: github.com/didip/tollbooth
+  version: c95eaa3ddc98f635a91e218b48727fb2e06613ea
 - name: github.com/gorilla/context
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
