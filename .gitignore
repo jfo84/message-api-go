@@ -1,2 +1,8 @@
 # Glide
 vendor/
+
+# Editor
+.vscode/
+
+# Exe
+message-api-go
