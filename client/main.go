@@ -22,7 +22,7 @@ type Wrapper struct {
 	client *messagebird.Client
 }
 
-// 160 runes
+// 160 runes for an SMS message
 const runeLimit = 160
 
 // 153 runes gives us space for a UDH header
