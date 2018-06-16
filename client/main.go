@@ -1,11 +1,12 @@
 package client
 
 import (
-	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/jfo84/message-api-go/utils"
 	messagebird "github.com/messagebird/go-rest-api"
 )
 
@@ -27,27 +28,34 @@ const runeLimit = 160
 // 153 runes gives us space for a UDH header
 const concatRuneLimit = 153
 
-// TODO
-// func verifyMessage(message *Message) error {
-// 	return error
-// }
+func decodeAndValidateMessage(decoder *json.Decoder) (*Message, error) {
+	var message Message
+	err := decoder.Decode(&message)
+	if err != nil {
+		return &message, errors.New("Invalid JSON. To post a message you must send JSON in the format: " +
+			"{\"recipient\":31612345678,\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}")
+	}
 
-// func sendMessage(w http.ResponseWriter, mbMessage *messagebird.Message) {
-// 	responseBytes := []byte("foo")
-// 	w.Write(responseBytes)
-// }
+	// 0 is the zero value for int
+	if message.Recipient == 0 {
+		return &message, errors.New("Invalid message: You must have a valid recipient phone number under the \"recipient\" key")
+	}
 
-func generateUDHString(num int, counter int) string {
-	var buffer bytes.Buffer
+	if len(message.Data) == 0 {
+		return &message, errors.New("Invalid message: You must have a valid message body under the \"message\" key")
+	}
 
-	// TODO
-	// buffer.WriteString(" ")
-	// buffer.WriteString(string(num))
-	// buffer.WriteString("(")
-	// buffer.WriteString(string(counter))
-	// buffer.WriteString(")")
+	if len(message.Originator) == 0 {
+		return &message, errors.New("Invalid message: You must have a valid message body under the \"message\" key")
+	}
 
-	return buffer.String()
+	return &message, nil
+}
+
+// For generating the UDH string for concatenated messages
+// https://en.wikipedia.org/wiki/Concatenated_SMS#Sending_a_concatenated_SMS_using_a_User_Data_Header
+func generateUDHString(ref string, num int, counter int) string {
+	return "050003" + ref + utils.IntToHex(num) + utils.IntToHex(counter)
 }
 
 func generateRecipientsSlice(recipient int) []string {
@@ -58,48 +66,80 @@ func generateRecipientsSlice(recipient int) []string {
 
 // PostMessage posts a message to MessageBird and responds with the results
 func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var message *Message
 	decoder := json.NewDecoder(r.Body)
 
-	var message Message
-	err := decoder.Decode(&message)
+	message, err = decodeAndValidateMessage(decoder)
+
 	if err != nil {
-		panic(err)
+		errBytes := []byte(err.Error())
+
+		w.Write(errBytes)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	dataRunes := []rune(message.Data)
+	var mbMessage *messagebird.Message
+	var mbMessages []*messagebird.Message
 
 	if len(dataRunes) < runeLimit {
-		wrap.sendMessage(&message, dataRunes)
+		mbMessage, err = wrap.sendMessage(message, dataRunes)
 	} else {
-		wrap.sendConcatMessage(&message, dataRunes)
+		mbMessages, err = wrap.sendConcatMessage(message, dataRunes)
+	}
+
+	if err != nil {
+		errBytes := []byte(err.Error())
+
+		w.Write(errBytes)
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		var messageJSON []byte
+		if len(mbMessages) == 0 {
+			messageJSON, err = json.Marshal(mbMessage)
+		} else {
+			messageJSON, err = json.Marshal(mbMessages)
+		}
+		// Bail out because this shouldn't happen
+		if err != nil {
+			panic(err)
+		}
+
+		w.Write(messageJSON)
+		// Unnecessary but more complete
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
-func (wrap *Wrapper) postToMessageBird(originator string, recipients []string, body string) {
-	params := &messagebird.MessageParams{}
+func (wrap *Wrapper) postToMessageBird(
+	originator string,
+	recipients []string,
+	body string,
+	params *messagebird.MessageParams) (*messagebird.Message, error) {
 	mbMessage, err := wrap.client.NewMessage(
 		originator,
 		recipients,
 		body,
 		params)
 
-	if err != nil {
-		panic(err)
-	}
-
 	fmt.Println(mbMessage)
+	return mbMessage, err
 }
 
-func (wrap *Wrapper) sendMessage(message *Message, messageRunes []rune) {
+func (wrap *Wrapper) sendMessage(message *Message, messageRunes []rune) (*messagebird.Message, error) {
 	recipients := generateRecipientsSlice(message.Recipient)
 	body := string(messageRunes)
+	params := &messagebird.MessageParams{}
 
-	wrap.postToMessageBird(message.Originator, recipients, body)
+	return wrap.postToMessageBird(message.Originator, recipients, body, params)
 }
 
-func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) {
-	recipients := generateRecipientsSlice(message.Recipient)
+func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*messagebird.Message, error) {
 	var body string
+	var mbMessages []*messagebird.Message
+	recipients := generateRecipientsSlice(message.Recipient)
 
 	messageRunes := make([]rune, concatRuneLimit)
 	messageCounter := 0
@@ -108,26 +148,36 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) {
 	// This "just works" and we don't have to use floats and rounding
 	messageNum := (dataLen / concatRuneLimit) + 1
 
+	// Generate a random string for identifying the connected SMS messages
+	refNumber := utils.RandHex()
+	udhString := generateUDHString(refNumber, messageNum, messageCounter)
+
+	// Tell the API we're sending binary data with a UDH header
+	typeDetails := messagebird.TypeDetails{"udh": udhString}
+	params := &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
+
 	for idx, dataRune := range dataRunes {
 		messageRunes[idx] = dataRune
 
 		if (len(messageRunes) == concatRuneLimit) || (idx == dataLen-1) {
 			body = string(messageRunes)
-			// Runes vs. bytes doesn't matter here since we're adding a known string that
-			// doesn't have multi-byte runes, e.g. Chinese characters
-			udhString := generateUDHString(messageNum, messageCounter)
-			// It looks dirty but string concatenation is fastest and
-			// zero-allocation: https://gist.github.com/dtjm/c6ebc86abe7515c988ec
-			body = udhString + body
 
-			wrap.postToMessageBird(message.Originator, recipients, body)
+			mbMessage, err := wrap.postToMessageBird(message.Originator, recipients, body, params)
+			// Bail out if one of the messages fails
+			if err != nil {
+				return nil, err
+			}
+
+			// Build a slice of messages for our response
+			mbMessages[messageCounter] = mbMessage
 
 			// Clear the slice of runes and increment the messageCounter
 			messageRunes = messageRunes[:0]
 			messageCounter++
 		}
-
 	}
+
+	return mbMessages, nil
 }
 
 // New returns a *Wrapper for re-use of the client object
