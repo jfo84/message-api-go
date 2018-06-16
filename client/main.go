@@ -108,8 +108,7 @@ func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Write(messageJSON)
-		// Unnecessary but more complete
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 	}
 }
 
