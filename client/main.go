@@ -46,7 +46,7 @@ func decodeAndValidateMessage(decoder *json.Decoder) (*Message, error) {
 	}
 
 	if len(message.Originator) == 0 {
-		return &message, errors.New("Invalid message: You must have a valid message body under the \"message\" key")
+		return &message, errors.New("Invalid message: You must have a valid originator under the \"originator\" key")
 	}
 
 	return &message, nil
