@@ -1,5 +1,5 @@
-hash: 6d00f89dd288a5ce13a840f9a2e6ccf7348204942e99198bc27ea5ab11932763
-updated: 2018-06-16T17:29:16.125867161+02:00
+hash: af9115711fdc5e0a5899614671ee950e814d4cccf4ef41c2b8d3ea24d268ec81
+updated: 2018-06-18T12:29:23.897632+02:00
 imports:
 - name: github.com/didip/tollbooth
   version: c95eaa3ddc98f635a91e218b48727fb2e06613ea
@@ -11,6 +11,8 @@ imports:
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
+- name: github.com/jfo84/go-rest-api
+  version: de37532edf4b2291b49096b5723211c881854d3b
 - name: github.com/messagebird/go-rest-api
   version: a505e01a7789c134e09737b4ed78aff748848259
 - name: github.com/onsi/ginkgo
@@ -49,6 +51,8 @@ imports:
   - types
 - name: github.com/patrickmn/go-cache
   version: 9f6ff22cfff829561052f5886ec80a2ac148b4eb
+- name: github.com/stretchr/testify
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
 - name: golang.org/x/time/rate
   version: fbb02b2291d28baffd63558aa44b4b56f178d650
 testImports:

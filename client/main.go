@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	messagebird "github.com/jfo84/go-rest-api"
 	"github.com/jfo84/message-api-go/utils"
-	messagebird "github.com/messagebird/go-rest-api"
 )
 
 // Message represents an interface for unmarshalling a received SMS message
@@ -17,7 +17,7 @@ type Message struct {
 	Data       string `json:"message"`
 }
 
-// Wrapper is a wrapper over messagebird.Client
+// Wrapper is a wrapper over *messagebird.Client
 type Wrapper struct {
 	client *messagebird.Client
 }
@@ -68,17 +68,20 @@ func generateRecipientsSlice(recipient int) []string {
 func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var message *Message
+
 	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
 
 	message, err = decodeAndValidateMessage(decoder)
 
 	if err != nil {
 		errBytes := []byte(err.Error())
-
+		fmt.Println(errBytes)
 		w.Write(errBytes)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	fmt.Printf("validated")
 
 	dataRunes := []rune(message.Data)
 	var mbMessage *messagebird.Message
@@ -124,6 +127,7 @@ func (wrap *Wrapper) postToMessageBird(
 		params)
 
 	fmt.Println(mbMessage)
+	fmt.Println(err)
 	return mbMessage, err
 }
 
@@ -131,7 +135,8 @@ func (wrap *Wrapper) sendMessage(message *Message, messageRunes []rune) (*messag
 	recipients := generateRecipientsSlice(message.Recipient)
 	body := string(messageRunes)
 	params := &messagebird.MessageParams{}
-
+	fmt.Println(recipients)
+	fmt.Println(body)
 	return wrap.postToMessageBird(message.Originator, recipients, body, params)
 }
 

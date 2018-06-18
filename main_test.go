@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/gorilla/mux"
-	"github.com/jfo84/message-api-go/client"
 	"github.com/jfo84/message-api-go/message"
+	"github.com/jfo84/message-api-go/mockclient"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +19,8 @@ var _ = Describe("TestMessageApiGo", func() {
 	)
 
 	router := mux.NewRouter().StrictSlash(true)
-	clientWrap := client.New()
+	client := new(mockclient.MockClient)
+	clientWrap := mockclient.MockClientWrapper{client: client}
 
 	Context("Pull Requests", func() {
 		It("Should correctly return a pull", func() {
@@ -27,7 +28,7 @@ var _ = Describe("TestMessageApiGo", func() {
 
 			recorder := httptest.NewRecorder()
 
-			messageController := message.NewController(clientWrap)
+			messageController := message.NewTestController(clientWrap)
 			router.HandleFunc("/messages", messageController.Post)
 			router.ServeHTTP(recorder, req)
 
