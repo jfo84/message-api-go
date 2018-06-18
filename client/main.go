@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	messagebird "github.com/jfo84/go-rest-api"
 	"github.com/jfo84/message-api-go/utils"
@@ -55,7 +56,7 @@ func decodeAndValidateMessage(decoder *json.Decoder) (*Message, error) {
 	err := decoder.Decode(&message)
 	if err != nil {
 		return &message, errors.New("Invalid JSON. To post a message you must send JSON in the format: " +
-			"{\"recipient\":\"31612345678\",\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}")
+			"{\"recipient\":31612345678,\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}")
 	}
 
 	// 0 is the zero value for int
@@ -82,7 +83,7 @@ func generateUDHString(ref string, num int, counter int) string {
 
 func generateRecipientsSlice(recipient int) []string {
 	recipients := make([]string, 1)
-	recipients[0] = string(recipient)
+	recipients[0] = strconv.Itoa(recipient)
 	return recipients
 }
 
@@ -101,10 +102,11 @@ func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 		errBytes := []byte(err.Error())
 		fmt.Println(errBytes)
 		w.Write(errBytes)
+		// TODO: This doesn't work for some reason
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("validated")
+	fmt.Printf("Validated")
 
 	dataRunes := []rune(message.Data)
 	var mbMessage *messagebird.Message
