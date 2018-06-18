@@ -8,6 +8,7 @@ import (
 
 	messagebird "github.com/jfo84/go-rest-api"
 	"github.com/jfo84/message-api-go/utils"
+	"github.com/stretchr/testify/mock"
 )
 
 // Message represents an interface for unmarshalling a received SMS message
@@ -17,9 +18,30 @@ type Message struct {
 	Data       string `json:"message"`
 }
 
-// Wrapper is a wrapper over *messagebird.Client
+// Mock is used to mock requests to the *messagebird.Client
+type Mock struct {
+	mock.Mock
+}
+
+// NewMessage records the args and returns a mock *messagebird.Message
+func (m *Mock) NewMessage(
+	originator string,
+	recipients []string,
+	body string,
+	msgParams *messagebird.MessageParams) (*messagebird.Message, error) {
+	args := m.Called(originator, recipients, body, msgParams)
+
+	return args.Get(0).(*messagebird.Message), args.Error(1)
+}
+
+// Wrapper is a wrapper over any Client that implements NewMessage
 type Wrapper struct {
-	client *messagebird.Client
+	Client
+}
+
+// Client is the piece of the *messagebird.Client interface that the mock client implements
+type Client interface {
+	NewMessage(originator string, recipients []string, body string, msgParams *messagebird.MessageParams) (*messagebird.Message, error)
 }
 
 // 160 runes for an SMS message
@@ -33,7 +55,7 @@ func decodeAndValidateMessage(decoder *json.Decoder) (*Message, error) {
 	err := decoder.Decode(&message)
 	if err != nil {
 		return &message, errors.New("Invalid JSON. To post a message you must send JSON in the format: " +
-			"{\"recipient\":31612345678,\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}")
+			"{\"recipient\":\"31612345678\",\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}")
 	}
 
 	// 0 is the zero value for int
@@ -70,9 +92,10 @@ func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 	var message *Message
 
 	decoder := json.NewDecoder(r.Body)
-	defer r.Body.Close()
 
 	message, err = decodeAndValidateMessage(decoder)
+
+	defer r.Body.Close()
 
 	if err != nil {
 		errBytes := []byte(err.Error())
@@ -120,7 +143,7 @@ func (wrap *Wrapper) postToMessageBird(
 	recipients []string,
 	body string,
 	params *messagebird.MessageParams) (*messagebird.Message, error) {
-	mbMessage, err := wrap.client.NewMessage(
+	mbMessage, err := wrap.Client.NewMessage(
 		originator,
 		recipients,
 		body,
@@ -187,7 +210,7 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 // New returns a *Wrapper for re-use of the client object
 func New() *Wrapper {
 	client := messagebird.New("test_22sWNIUrVGyI3J2IheE4SpwUc")
-	wrapper := &Wrapper{client: client}
+	wrapper := &Wrapper{Client: client}
 
 	return wrapper
 }
