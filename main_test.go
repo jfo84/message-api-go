@@ -72,10 +72,10 @@ var _ = Describe("TestMessageApiGo", func() {
 				Body:       body,
 			}
 
-			// Params
-			params := &messagebird.MessageParams{}
-
 			mockClient := new(client.Mock)
+
+			// Params
+			var params *messagebird.MessageParams
 
 			mockClient.On("NewMessage",
 				originator,

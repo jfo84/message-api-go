@@ -159,10 +159,9 @@ func (wrap *Wrapper) postToMessageBird(
 func (wrap *Wrapper) sendMessage(message *Message, messageRunes []rune) (*messagebird.Message, error) {
 	recipients := generateRecipientsSlice(message.Recipient)
 	body := string(messageRunes)
-	params := &messagebird.MessageParams{}
 	fmt.Println(recipients)
 	fmt.Println(body)
-	return wrap.postToMessageBird(message.Originator, recipients, body, params)
+	return wrap.postToMessageBird(message.Originator, recipients, body, nil)
 }
 
 func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*messagebird.Message, error) {
