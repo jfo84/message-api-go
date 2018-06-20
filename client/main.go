@@ -122,23 +122,24 @@ func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		errBytes := []byte(err.Error())
 
-		w.Write(errBytes)
 		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		var messageJSON []byte
-		if len(mbMessages) == 0 {
-			messageJSON, err = json.Marshal(mbMessage)
-		} else {
-			messageJSON, err = json.Marshal(mbMessages)
-		}
-		// Bail out because this shouldn't happen
-		if err != nil {
-			panic(err)
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		w.Write(messageJSON)
+		w.Write(errBytes)
+		return
 	}
+
+	var messageJSON []byte
+	if len(mbMessages) == 0 {
+		messageJSON, err = json.Marshal(mbMessage)
+	} else {
+		messageJSON, err = json.Marshal(mbMessages)
+	}
+	// Bail out because this shouldn't happen
+	if err != nil {
+		panic(err)
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write(messageJSON)
 }
 
 func (wrap *Wrapper) postToMessageBird(

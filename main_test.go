@@ -25,6 +25,45 @@ var _ = Describe("TestMessageApiGo", func() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	// Build a *messagebird.Message object to return
+
+	// Originator
+	originator := "MessageBird"
+
+	// Recipients
+	recipient := 31612345678
+	recipients := make([]string, 1)
+	recipients[0] = strconv.Itoa(recipient)
+
+	nowTime := time.Now()
+	item := messagebird.Recipient{
+		Recipient:      recipient,
+		Status:         "sent",
+		StatusDatetime: &nowTime,
+	}
+	items := make([]messagebird.Recipient, 1)
+	items[0] = item
+
+	mbRecipients := messagebird.Recipients{
+		TotalCount:               1,
+		TotalSentCount:           1,
+		TotalDeliveredCount:      1,
+		TotalDeliveryFailedCount: 0,
+		Items: items,
+	}
+
+	// Body
+	body := "This is a test message."
+
+	mbMessage := messagebird.Message{
+		Originator: originator,
+		Recipients: mbRecipients,
+		Body:       body,
+	}
+
+	// Params
+	params := &messagebird.MessageParams{}
+
 	Context("Messages", func() {
 		It("Should correctly post to MessageBird and return a serialized message response", func() {
 			reqBody := "{\"recipient\":31612345678,\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}"
@@ -37,47 +76,7 @@ var _ = Describe("TestMessageApiGo", func() {
 
 			recorder := httptest.NewRecorder()
 
-			// Build a *messagebird.Message object to return
-
-			// Originator
-			originator := "MessageBird"
-
-			// Recipients
-			recipient := 31612345678
-			recipients := make([]string, 1)
-			recipients[0] = strconv.Itoa(recipient)
-
-			nowTime := time.Now()
-			item := messagebird.Recipient{
-				Recipient:      recipient,
-				Status:         "sent",
-				StatusDatetime: &nowTime,
-			}
-			items := make([]messagebird.Recipient, 1)
-			items[0] = item
-
-			mbRecipients := messagebird.Recipients{
-				TotalCount:               1,
-				TotalSentCount:           1,
-				TotalDeliveredCount:      1,
-				TotalDeliveryFailedCount: 0,
-				Items: items,
-			}
-
-			// Body
-			body := "This is a test message."
-
-			mbMessage := messagebird.Message{
-				Originator: originator,
-				Recipients: mbRecipients,
-				Body:       body,
-			}
-
 			mockClient := new(client.Mock)
-
-			// Params
-			params := &messagebird.MessageParams{}
-
 			mockClient.On("NewMessage",
 				originator,
 				recipients,
