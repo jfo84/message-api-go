@@ -100,11 +100,11 @@ func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
 		errBytes := []byte(err.Error())
 		fmt.Println(errBytes)
 		w.Write(errBytes)
-		// TODO: This doesn't work for some reason
-		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	fmt.Printf("Validated")
@@ -136,8 +136,8 @@ func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
-		w.Write(messageJSON)
 		w.WriteHeader(http.StatusCreated)
+		w.Write(messageJSON)
 	}
 }
 
