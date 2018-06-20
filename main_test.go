@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -31,7 +32,7 @@ var _ = Describe("TestMessageApiGo", func() {
 
 			req, err = http.NewRequest("POST", "/messages", reader)
 			if err != nil {
-				return
+				panic(err)
 			}
 
 			recorder := httptest.NewRecorder()
@@ -89,6 +90,12 @@ var _ = Describe("TestMessageApiGo", func() {
 			router.HandleFunc("/messages", messageController.Post)
 			router.ServeHTTP(recorder, req)
 
+			messageJSON, err := json.Marshal(mbMessage)
+			if err != nil {
+				panic(err)
+			}
+
+			Expect(recorder.Body.Bytes()).To(Equal(messageJSON))
 			Expect(recorder.Code).To(Equal(http.StatusCreated))
 		})
 	})
