@@ -1,6 +1,10 @@
-hash: af9115711fdc5e0a5899614671ee950e814d4cccf4ef41c2b8d3ea24d268ec81
-updated: 2018-06-18T12:29:23.897632+02:00
+hash: 51ec9633c6267cb615cfb493b89456f3980ea3bb91fe1659ddbc260d32c3e787
+updated: 2018-06-20T12:13:30.783807+02:00
 imports:
+- name: github.com/davecgh/go-spew
+  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
+  subpackages:
+  - spew
 - name: github.com/didip/tollbooth
   version: c95eaa3ddc98f635a91e218b48727fb2e06613ea
   subpackages:
@@ -11,8 +15,10 @@ imports:
   version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
-- name: github.com/jfo84/go-rest-api
-  version: de37532edf4b2291b49096b5723211c881854d3b
+- name: github.com/jfo84/testify
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+  subpackages:
+  - mock
 - name: github.com/messagebird/go-rest-api
   version: a505e01a7789c134e09737b4ed78aff748848259
 - name: github.com/onsi/ginkgo
@@ -51,8 +57,16 @@ imports:
   - types
 - name: github.com/patrickmn/go-cache
   version: 9f6ff22cfff829561052f5886ec80a2ac148b4eb
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/objx
+  version: 0ab728f62c7f6fcd754334f7931c2dd659dce1d1
 - name: github.com/stretchr/testify
   version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+  subpackages:
+  - assert
 - name: golang.org/x/time/rate
   version: fbb02b2291d28baffd63558aa44b4b56f178d650
 testImports:
@@ -63,7 +77,7 @@ testImports:
   - html/atom
   - html/charset
 - name: golang.org/x/sys
-  version: 6c888cc515d3ed83fc103cf1d84468aad274b0a7
+  version: fc8bd948cf46f9c7af0f07d34151ce25fe90e477
   subpackages:
   - unix
 - name: golang.org/x/text

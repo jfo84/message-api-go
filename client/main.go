@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strconv"
 
-	messagebird "github.com/jfo84/go-rest-api"
 	"github.com/jfo84/message-api-go/utils"
-	"github.com/stretchr/testify/mock"
+	"github.com/jfo84/testify/mock"
+	messagebird "github.com/messagebird/go-rest-api"
 )
 
 // Message represents an interface for unmarshalling a received SMS message
@@ -32,7 +32,8 @@ func (m *Mock) NewMessage(
 	msgParams *messagebird.MessageParams) (*messagebird.Message, error) {
 	args := m.Called(originator, recipients, body, msgParams)
 
-	return args.Get(0).(*messagebird.Message), args.Error(1)
+	mbMessage := args.Get(0).(messagebird.Message)
+	return &mbMessage, args.Error(1)
 }
 
 // Wrapper is a wrapper over any Client that implements NewMessage
@@ -159,9 +160,9 @@ func (wrap *Wrapper) postToMessageBird(
 func (wrap *Wrapper) sendMessage(message *Message, messageRunes []rune) (*messagebird.Message, error) {
 	recipients := generateRecipientsSlice(message.Recipient)
 	body := string(messageRunes)
-	fmt.Println(recipients)
-	fmt.Println(body)
-	return wrap.postToMessageBird(message.Originator, recipients, body, nil)
+	params := &messagebird.MessageParams{}
+
+	return wrap.postToMessageBird(message.Originator, recipients, body, params)
 }
 
 func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*messagebird.Message, error) {
