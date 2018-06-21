@@ -18,6 +18,63 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func setupSendMessageContext(body string) (client.Wrapper, string, []byte) {
+	// Build a *messagebird.Message object to return except for the body
+	// which we pass as an arg in each test
+
+	// Originator
+	originator := "MessageBird"
+
+	// Recipients
+	recipient := 31612345678
+	recipients := make([]string, 1)
+	recipients[0] = strconv.Itoa(recipient)
+
+	nowTime := time.Now()
+	item := messagebird.Recipient{
+		Recipient:      recipient,
+		Status:         "sent",
+		StatusDatetime: &nowTime,
+	}
+	items := make([]messagebird.Recipient, 1)
+	items[0] = item
+
+	mbRecipients := messagebird.Recipients{
+		TotalCount:               1,
+		TotalSentCount:           1,
+		TotalDeliveredCount:      1,
+		TotalDeliveryFailedCount: 0,
+		Items: items,
+	}
+
+	mbMessage := messagebird.Message{
+		Originator: originator,
+		Recipients: mbRecipients,
+		Body:       body,
+	}
+
+	// Params
+	params := &messagebird.MessageParams{}
+
+	mockClient := new(client.Mock)
+	mockClient.On("NewMessage",
+		originator,
+		recipients,
+		body,
+		params).Return(mbMessage, nil)
+
+	clientWrap := client.Wrapper{Client: mockClient}
+
+	reqBody := "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
+
+	messageJSON, err := json.Marshal(mbMessage)
+	if err != nil {
+		panic(err)
+	}
+
+	return clientWrap, reqBody, messageJSON
+}
+
 var _ = Describe("TestMessageApiGo", func() {
 	var (
 		req *http.Request
@@ -27,60 +84,13 @@ var _ = Describe("TestMessageApiGo", func() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	Context("Messages", func() {
-		// Build a *messagebird.Message object to return
-
-		// Originator
-		originator := "MessageBird"
-
-		// Recipients
-		recipient := 31612345678
-		recipients := make([]string, 1)
-		recipients[0] = strconv.Itoa(recipient)
-
-		nowTime := time.Now()
-		item := messagebird.Recipient{
-			Recipient:      recipient,
-			Status:         "sent",
-			StatusDatetime: &nowTime,
-		}
-		items := make([]messagebird.Recipient, 1)
-		items[0] = item
-
-		mbRecipients := messagebird.Recipients{
-			TotalCount:               1,
-			TotalSentCount:           1,
-			TotalDeliveredCount:      1,
-			TotalDeliveryFailedCount: 0,
-			Items: items,
-		}
-
-		// Body
-		body := "This is a test message."
-
-		mbMessage := messagebird.Message{
-			Originator: originator,
-			Recipients: mbRecipients,
-			Body:       body,
-		}
-
-		// Params
-		params := &messagebird.MessageParams{}
-
-		var reqBody string
-		var mockClient *client.Mock
 
 		Context("SendMessage", func() {
-			BeforeEach(func() {
-				mockClient = new(client.Mock)
-				mockClient.On("NewMessage",
-					originator,
-					recipients,
-					body,
-					params).Return(mbMessage, nil)
-			})
 
 			It("Should correctly post to MessageBird and return a serialized message response", func() {
-				reqBody = "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
+				body := "This is a test message."
+				clientWrap, reqBody, messageJSON := setupSendMessageContext(body)
+
 				reader := bytes.NewBufferString(reqBody)
 
 				req, err = http.NewRequest("POST", "/messages", reader)
@@ -90,24 +100,18 @@ var _ = Describe("TestMessageApiGo", func() {
 
 				recorder := httptest.NewRecorder()
 
-				clientWrap := client.Wrapper{Client: mockClient}
-
 				messageController := message.NewController(&clientWrap)
 				router.HandleFunc("/messages", messageController.Post)
 				router.ServeHTTP(recorder, req)
-
-				messageJSON, err := json.Marshal(mbMessage)
-				if err != nil {
-					panic(err)
-				}
 
 				Expect(recorder.Body.Bytes()).To(Equal(messageJSON))
 				Expect(recorder.Code).To(Equal(http.StatusCreated))
 			})
 
 			It("Should correctly return an error with an invalid message", func() {
-				body = ""
-				reqBody = "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
+				body := ""
+				clientWrap, reqBody, _ := setupSendMessageContext(body)
+
 				reader := bytes.NewBufferString(reqBody)
 
 				req, err = http.NewRequest("POST", "/messages", reader)
@@ -116,8 +120,6 @@ var _ = Describe("TestMessageApiGo", func() {
 				}
 
 				recorder := httptest.NewRecorder()
-
-				clientWrap := client.Wrapper{Client: mockClient}
 
 				messageController := message.NewController(&clientWrap)
 				router.HandleFunc("/messages", messageController.Post)
@@ -129,21 +131,52 @@ var _ = Describe("TestMessageApiGo", func() {
 		})
 
 		Context("SendConcatMessage", func() {
-			mockClient = new(client.Mock)
+			// Body
+			firstMessageBody := utils.RandStringRunes(153)
+			secondMessageBody := "0123456789"
+			body := firstMessageBody + secondMessageBody
+
+			// Originator
+			originator := "MessageBird"
+
+			// Recipients
+			recipient := 31612345678
+			recipients := make([]string, 1)
+			recipients[0] = strconv.Itoa(recipient)
+
+			nowTime := time.Now()
+			item := messagebird.Recipient{
+				Recipient:      recipient,
+				Status:         "sent",
+				StatusDatetime: &nowTime,
+			}
+			items := make([]messagebird.Recipient, 1)
+			items[0] = item
+
+			mbRecipients := messagebird.Recipients{
+				TotalCount:               1,
+				TotalSentCount:           1,
+				TotalDeliveredCount:      1,
+				TotalDeliveryFailedCount: 0,
+				Items: items,
+			}
+
+			mbMessage := messagebird.Message{
+				Originator: originator,
+				Recipients: mbRecipients,
+				Body:       body,
+			}
+
+			mockClient := new(client.Mock)
 
 			var udhString string
 			var typeDetails messagebird.TypeDetails
-
-			firstMessageBody := utils.RandStringRunes(153)
-			secondMessageBody := "0123456789"
-			body = firstMessageBody + secondMessageBody
-			mbMessage.Body = body
 
 			refNumber := utils.RandHex()
 
 			udhString = utils.GenerateUDHString(refNumber, 2, 1)
 			typeDetails = messagebird.TypeDetails{"udh": udhString}
-			params = &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
+			params := &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
 
 			mockClient.On("NewMessage",
 				originator,
@@ -162,7 +195,7 @@ var _ = Describe("TestMessageApiGo", func() {
 				params).Return(mbMessage, nil)
 
 			It("Should correctly post to MessageBird and return a serialized message response", func() {
-				reqBody = "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
+				reqBody := "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
 				reader := bytes.NewBufferString(reqBody)
 
 				req, err = http.NewRequest("POST", "/messages", reader)
