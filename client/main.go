@@ -76,12 +76,6 @@ func decodeAndValidateMessage(decoder *json.Decoder) (*Message, error) {
 	return &message, nil
 }
 
-// For generating the UDH string for concatenated messages
-// https://en.wikipedia.org/wiki/Concatenated_SMS#Sending_a_concatenated_SMS_using_a_User_Data_Header
-func generateUDHString(ref string, num int, counter int) string {
-	return "050003" + ref + utils.IntToHex(num) + utils.IntToHex(counter)
-}
-
 func generateRecipientsSlice(recipient int) []string {
 	recipients := make([]string, 1)
 	recipients[0] = strconv.Itoa(recipient)
@@ -180,7 +174,7 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 
 	// Generate a random string for identifying the connected SMS messages
 	refNumber := utils.RandHex()
-	udhString := generateUDHString(refNumber, messageNum, messageCounter)
+	udhString := utils.GenerateUDHString(refNumber, messageNum, messageCounter)
 
 	// Tell the API we're sending binary data with a UDH header
 	typeDetails := messagebird.TypeDetails{"udh": udhString}

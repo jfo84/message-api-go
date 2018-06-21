@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jfo84/message-api-go/client"
 	"github.com/jfo84/message-api-go/message"
+	"github.com/jfo84/message-api-go/utils"
 	messagebird "github.com/messagebird/go-rest-api"
 
 	. "github.com/onsi/ginkgo"
@@ -65,62 +66,121 @@ var _ = Describe("TestMessageApiGo", func() {
 		// Params
 		params := &messagebird.MessageParams{}
 
+		var reqBody string
 		var mockClient *client.Mock
 
-		BeforeEach(func() {
+		Context("SendMessage", func() {
+			BeforeEach(func() {
+				mockClient = new(client.Mock)
+				mockClient.On("NewMessage",
+					originator,
+					recipients,
+					body,
+					params).Return(mbMessage, nil)
+			})
+
+			It("Should correctly post to MessageBird and return a serialized message response", func() {
+				reqBody = "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
+				reader := bytes.NewBufferString(reqBody)
+
+				req, err = http.NewRequest("POST", "/messages", reader)
+				if err != nil {
+					panic(err)
+				}
+
+				recorder := httptest.NewRecorder()
+
+				clientWrap := client.Wrapper{Client: mockClient}
+
+				messageController := message.NewController(&clientWrap)
+				router.HandleFunc("/messages", messageController.Post)
+				router.ServeHTTP(recorder, req)
+
+				messageJSON, err := json.Marshal(mbMessage)
+				if err != nil {
+					panic(err)
+				}
+
+				Expect(recorder.Body.Bytes()).To(Equal(messageJSON))
+				Expect(recorder.Code).To(Equal(http.StatusCreated))
+			})
+
+			It("Should correctly return an error with an invalid message", func() {
+				body = ""
+				reqBody = "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
+				reader := bytes.NewBufferString(reqBody)
+
+				req, err = http.NewRequest("POST", "/messages", reader)
+				if err != nil {
+					panic(err)
+				}
+
+				recorder := httptest.NewRecorder()
+
+				clientWrap := client.Wrapper{Client: mockClient}
+
+				messageController := message.NewController(&clientWrap)
+				router.HandleFunc("/messages", messageController.Post)
+				router.ServeHTTP(recorder, req)
+
+				Expect(recorder.Body.Bytes()).To(Equal([]byte("Invalid message: You must have a valid message body under the \"message\" key")))
+				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("SendConcatMessage", func() {
 			mockClient = new(client.Mock)
+
+			var udhString string
+			var typeDetails messagebird.TypeDetails
+
+			firstMessageBody := utils.RandStringRunes(153)
+			secondMessageBody := "0123456789"
+			body = firstMessageBody + secondMessageBody
+			mbMessage.Body = body
+
+			refNumber := utils.RandHex()
+
+			udhString = utils.GenerateUDHString(refNumber, 2, 1)
+			typeDetails = messagebird.TypeDetails{"udh": udhString}
+			params = &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
+
 			mockClient.On("NewMessage",
 				originator,
 				recipients,
-				body,
+				firstMessageBody,
 				params).Return(mbMessage, nil)
-		})
 
-		It("Should correctly post to MessageBird and return a serialized message response", func() {
-			reqBody := "{\"recipient\":31612345678,\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}"
-			reader := bytes.NewBufferString(reqBody)
+			udhString = utils.GenerateUDHString(refNumber, 2, 2)
+			typeDetails = messagebird.TypeDetails{"udh": udhString}
+			params = &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
 
-			req, err = http.NewRequest("POST", "/messages", reader)
-			if err != nil {
-				panic(err)
-			}
+			mockClient.On("NewMessage",
+				originator,
+				recipients,
+				secondMessageBody,
+				params).Return(mbMessage, nil)
 
-			recorder := httptest.NewRecorder()
+			It("Should correctly post to MessageBird and return a serialized message response", func() {
+				reqBody = "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
+				reader := bytes.NewBufferString(reqBody)
 
-			clientWrap := client.Wrapper{Client: mockClient}
+				req, err = http.NewRequest("POST", "/messages", reader)
+				if err != nil {
+					panic(err)
+				}
 
-			messageController := message.NewController(&clientWrap)
-			router.HandleFunc("/messages", messageController.Post)
-			router.ServeHTTP(recorder, req)
+				recorder := httptest.NewRecorder()
 
-			messageJSON, err := json.Marshal(mbMessage)
-			if err != nil {
-				panic(err)
-			}
+				clientWrap := client.Wrapper{Client: mockClient}
 
-			Expect(recorder.Body.Bytes()).To(Equal(messageJSON))
-			Expect(recorder.Code).To(Equal(http.StatusCreated))
-		})
+				messageController := message.NewController(&clientWrap)
+				router.HandleFunc("/messages", messageController.Post)
+				router.ServeHTTP(recorder, req)
 
-		It("Should correctly return an error with an invalid message", func() {
-			reqBody := "{\"recipient\":31612345678,\"originator\":\"MessageBird\"}"
-			reader := bytes.NewBufferString(reqBody)
-
-			req, err = http.NewRequest("POST", "/messages", reader)
-			if err != nil {
-				panic(err)
-			}
-
-			recorder := httptest.NewRecorder()
-
-			clientWrap := client.Wrapper{Client: mockClient}
-
-			messageController := message.NewController(&clientWrap)
-			router.HandleFunc("/messages", messageController.Post)
-			router.ServeHTTP(recorder, req)
-
-			Expect(recorder.Body.Bytes()).To(Equal([]byte("Invalid message: You must have a valid message body under the \"message\" key")))
-			Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+				Expect(recorder.Body.String()).To(Equal("foo"))
+				Expect(recorder.Code).To(Equal(http.StatusCreated))
+			})
 		})
 	})
 })
