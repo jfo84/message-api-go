@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"time"
@@ -21,8 +22,14 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 
-// RandHex is used to generate a 2 digit random hexadecimal is XX format
+// RandHex is used to generate a 2 digit random hexadecimal in XX format
 func RandHex() string {
+	// This is brittle but it's the best I could find
+	// See https://stackoverflow.com/questions/14249217/how-do-i-know-im-running-within-go-test
+	if flag.Lookup("test.v").Value.String() != "" {
+		return "F1"
+	}
+
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	n := r1.Intn(256)

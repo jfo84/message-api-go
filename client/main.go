@@ -156,15 +156,16 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 	const concatRuneLimit = 153
 
 	var body string
-	var mbMessages []*messagebird.Message
 	recipients := generateRecipientsSlice(message.Recipient)
 
 	messageRunes := make([]rune, concatRuneLimit)
+	messageRuneIdx := 0
 	messageCounter := 0
 	dataLen := len(dataRunes)
 
 	// This "just works" and we don't have to use floats and rounding
 	messageNum := (dataLen / concatRuneLimit) + 1
+	mbMessages := make([]*messagebird.Message, messageNum)
 
 	// Generate a random string for identifying the connected SMS messages
 	refNumber := utils.RandHex()
@@ -175,7 +176,12 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 	params := &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
 
 	for idx, dataRune := range dataRunes {
-		if (idx == concatRuneLimit) || (idx == dataLen-1) {
+		if (messageRuneIdx == concatRuneLimit) || (idx == dataLen-1) {
+			// Don't cut off the last value if we're at the end of the slice
+			if idx == dataLen-1 {
+				messageRunes[messageRuneIdx] = dataRune
+			}
+
 			body = string(messageRunes)
 
 			mbMessage, err := wrap.postToMessageBird(message.Originator, recipients, body, params)
@@ -187,11 +193,23 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 			// Build a slice of messages for our response
 			mbMessages[messageCounter] = mbMessage
 
-			// Clear the slice of runes and increment the messageCounter
-			messageRunes = messageRunes[:0]
+			// Bail if we're at the end of the slice
+			if idx == dataLen-1 {
+				messageRunes[messageRuneIdx] = dataRune
+			}
+
 			messageCounter++
+			// When you serialize a slice with extra length it spits out garbage
+			if messageNum == messageCounter+1 {
+				messageRunes = make([]rune, concatRuneLimit)
+			} else {
+				remainingRunes := dataLen % concatRuneLimit
+				messageRunes = make([]rune, remainingRunes)
+			}
+			messageRuneIdx = 0
 		}
-		messageRunes[idx] = dataRune
+		messageRunes[messageRuneIdx] = dataRune
+		messageRuneIdx++
 	}
 
 	return mbMessages, nil

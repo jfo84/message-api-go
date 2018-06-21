@@ -132,9 +132,9 @@ var _ = Describe("TestMessageApiGo", func() {
 
 		Context("SendConcatMessage", func() {
 			// Body
-			firstMessageBody := utils.RandStringRunes(153)
-			secondMessageBody := "0123456789"
-			body := firstMessageBody + secondMessageBody
+			messageBodyOne := utils.RandStringRunes(153)
+			messageBodyTwo := "0123456789"
+			body := messageBodyOne + messageBodyTwo
 
 			// Originator
 			originator := "MessageBird"
@@ -161,10 +161,16 @@ var _ = Describe("TestMessageApiGo", func() {
 				Items: items,
 			}
 
-			mbMessage := messagebird.Message{
+			mbMessageOne := messagebird.Message{
 				Originator: originator,
 				Recipients: mbRecipients,
-				Body:       body,
+				Body:       messageBodyOne,
+			}
+
+			mbMessageTwo := messagebird.Message{
+				Originator: originator,
+				Recipients: mbRecipients,
+				Body:       messageBodyTwo,
 			}
 
 			mockClient := new(client.Mock)
@@ -181,8 +187,8 @@ var _ = Describe("TestMessageApiGo", func() {
 			mockClient.On("NewMessage",
 				originator,
 				recipients,
-				firstMessageBody,
-				params).Return(mbMessage, nil)
+				messageBodyOne,
+				params).Return(mbMessageOne, nil)
 
 			udhString = utils.GenerateUDHString(refNumber, 2, 2)
 			typeDetails = messagebird.TypeDetails{"udh": udhString}
@@ -191,8 +197,8 @@ var _ = Describe("TestMessageApiGo", func() {
 			mockClient.On("NewMessage",
 				originator,
 				recipients,
-				secondMessageBody,
-				params).Return(mbMessage, nil)
+				messageBodyTwo,
+				params).Return(mbMessageTwo, nil)
 
 			It("Should correctly post to MessageBird and return a serialized message response", func() {
 				Skip("Skipping SendConcatMessage test")
@@ -213,7 +219,16 @@ var _ = Describe("TestMessageApiGo", func() {
 				router.HandleFunc("/messages", messageController.Post)
 				router.ServeHTTP(recorder, req)
 
-				Expect(recorder.Body.String()).To(Equal("foo"))
+				mbMessages := make([]*messagebird.Message, 2)
+				mbMessages[0] = &mbMessageOne
+				mbMessages[1] = &mbMessageTwo
+
+				messageJSON, err := json.Marshal(mbMessages)
+				if err != nil {
+					panic(err)
+				}
+
+				Expect(recorder.Body.Bytes()).To(Equal(messageJSON))
 				Expect(recorder.Code).To(Equal(http.StatusCreated))
 			})
 		})
