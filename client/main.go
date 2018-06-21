@@ -19,6 +19,16 @@ type Message struct {
 	Data       string `json:"message"`
 }
 
+// Wrapper is a wrapper over any Client that implements NewMessage
+type Wrapper struct {
+	Client
+}
+
+// Client is the piece of the *messagebird.Client interface that the mock client implements
+type Client interface {
+	NewMessage(originator string, recipients []string, body string, msgParams *messagebird.MessageParams) (*messagebird.Message, error)
+}
+
 // Mock is used to mock requests to the *messagebird.Client
 type Mock struct {
 	mock.Mock
@@ -36,54 +46,11 @@ func (m *Mock) NewMessage(
 	return &mbMessage, args.Error(1)
 }
 
-// Wrapper is a wrapper over any Client that implements NewMessage
-type Wrapper struct {
-	Client
-}
-
-// Client is the piece of the *messagebird.Client interface that the mock client implements
-type Client interface {
-	NewMessage(originator string, recipients []string, body string, msgParams *messagebird.MessageParams) (*messagebird.Message, error)
-}
-
-// 160 runes for an SMS message
-const runeLimit = 160
-
-// 153 runes gives us space for a UDH header
-const concatRuneLimit = 153
-
-func decodeAndValidateMessage(decoder *json.Decoder) (*Message, error) {
-	var message Message
-	err := decoder.Decode(&message)
-	if err != nil {
-		return &message, errors.New("Invalid JSON. To post a message you must send JSON in the format: " +
-			"{\"recipient\":31612345678,\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}")
-	}
-
-	// 0 is the zero value for int
-	if message.Recipient == 0 {
-		return &message, errors.New("Invalid message: You must have a valid recipient phone number under the \"recipient\" key")
-	}
-
-	if len(message.Data) == 0 {
-		return &message, errors.New("Invalid message: You must have a valid message body under the \"message\" key")
-	}
-
-	if len(message.Originator) == 0 {
-		return &message, errors.New("Invalid message: You must have a valid originator under the \"originator\" key")
-	}
-
-	return &message, nil
-}
-
-func generateRecipientsSlice(recipient int) []string {
-	recipients := make([]string, 1)
-	recipients[0] = strconv.Itoa(recipient)
-	return recipients
-}
-
 // PostMessage posts a message to MessageBird and responds with the results
 func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
+	// 160 runes for an SMS message
+	const runeLimit = 160
+
 	var err error
 	var message *Message
 
@@ -136,6 +103,30 @@ func (wrap *Wrapper) PostMessage(w http.ResponseWriter, r *http.Request) {
 	w.Write(messageJSON)
 }
 
+func decodeAndValidateMessage(decoder *json.Decoder) (*Message, error) {
+	var message Message
+	err := decoder.Decode(&message)
+	if err != nil {
+		return &message, errors.New("Invalid JSON. To post a message you must send JSON in the format: " +
+			"{\"recipient\":31612345678,\"originator\":\"MessageBird\",\"message\":\"This is a test message.\"}")
+	}
+
+	// 0 is the zero value for int
+	if message.Recipient == 0 {
+		return &message, errors.New("Invalid message: You must have a valid recipient phone number under the \"recipient\" key")
+	}
+
+	if len(message.Data) == 0 {
+		return &message, errors.New("Invalid message: You must have a valid message body under the \"message\" key")
+	}
+
+	if len(message.Originator) == 0 {
+		return &message, errors.New("Invalid message: You must have a valid originator under the \"originator\" key")
+	}
+
+	return &message, nil
+}
+
 func (wrap *Wrapper) postToMessageBird(
 	originator string,
 	recipients []string,
@@ -161,6 +152,9 @@ func (wrap *Wrapper) sendMessage(message *Message, messageRunes []rune) (*messag
 }
 
 func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*messagebird.Message, error) {
+	// 153 runes gives us space for a UDH header
+	const concatRuneLimit = 153
+
 	var body string
 	var mbMessages []*messagebird.Message
 	recipients := generateRecipientsSlice(message.Recipient)
@@ -201,6 +195,12 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 	}
 
 	return mbMessages, nil
+}
+
+func generateRecipientsSlice(recipient int) []string {
+	recipients := make([]string, 1)
+	recipients[0] = strconv.Itoa(recipient)
+	return recipients
 }
 
 // New returns a *Wrapper for re-use of the client object
