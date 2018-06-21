@@ -174,16 +174,14 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 
 	// Generate a random string for identifying the connected SMS messages
 	refNumber := utils.RandHex()
-	udhString := utils.GenerateUDHString(refNumber, messageNum, messageCounter)
+	udhString := utils.GenerateUDHString(refNumber, messageNum, messageCounter+1)
 
 	// Tell the API we're sending binary data with a UDH header
 	typeDetails := messagebird.TypeDetails{"udh": udhString}
 	params := &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
 
 	for idx, dataRune := range dataRunes {
-		messageRunes[idx] = dataRune
-
-		if (len(messageRunes) == concatRuneLimit) || (idx == dataLen-1) {
+		if (idx == concatRuneLimit) || (idx == dataLen-1) {
 			body = string(messageRunes)
 
 			mbMessage, err := wrap.postToMessageBird(message.Originator, recipients, body, params)
@@ -199,6 +197,7 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 			messageRunes = messageRunes[:0]
 			messageCounter++
 		}
+		messageRunes[idx] = dataRune
 	}
 
 	return mbMessages, nil
