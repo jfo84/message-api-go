@@ -81,8 +81,6 @@ var _ = Describe("TestMessageApiGo", func() {
 		err error
 	)
 
-	router := mux.NewRouter().StrictSlash(true)
-
 	Context("Messages", func() {
 
 		Context("SendMessage", func() {
@@ -101,6 +99,8 @@ var _ = Describe("TestMessageApiGo", func() {
 				recorder := httptest.NewRecorder()
 
 				messageController := message.NewController(&clientWrap)
+
+				router := mux.NewRouter().StrictSlash(true)
 				router.HandleFunc("/messages", messageController.Post)
 				router.ServeHTTP(recorder, req)
 
@@ -122,6 +122,8 @@ var _ = Describe("TestMessageApiGo", func() {
 				recorder := httptest.NewRecorder()
 
 				messageController := message.NewController(&clientWrap)
+
+				router := mux.NewRouter().StrictSlash(true)
 				router.HandleFunc("/messages", messageController.Post)
 				router.ServeHTTP(recorder, req)
 
@@ -131,6 +133,8 @@ var _ = Describe("TestMessageApiGo", func() {
 		})
 
 		Context("SendConcatMessage", func() {
+			router := mux.NewRouter().StrictSlash(true)
+
 			// Body
 			messageBodyOne := utils.RandStringRunes(153)
 			messageBodyTwo := "0123456789"
@@ -201,8 +205,6 @@ var _ = Describe("TestMessageApiGo", func() {
 				params).Return(mbMessageTwo, nil)
 
 			It("Should correctly post to MessageBird and return a serialized message response", func() {
-				Skip("Skipping SendConcatMessage test")
-
 				reqBody := "{\"recipient\":" + strconv.Itoa(recipient) + ",\"originator\":\"" + originator + "\",\"message\":\"" + body + "\"}"
 				reader := bytes.NewBufferString(reqBody)
 

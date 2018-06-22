@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/jfo84/message-api-go/utils"
-	"github.com/jfo84/testify/mock"
 	messagebird "github.com/messagebird/go-rest-api"
+	"github.com/stretchr/testify/mock"
 )
 
 // Message represents an interface for unmarshalling a received SMS message
@@ -169,11 +169,6 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 
 	// Generate a random string for identifying the connected SMS messages
 	refNumber := utils.RandHex()
-	udhString := utils.GenerateUDHString(refNumber, messageNum, messageCounter+1)
-
-	// Tell the API we're sending binary data with a UDH header
-	typeDetails := messagebird.TypeDetails{"udh": udhString}
-	params := &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
 
 	for idx, dataRune := range dataRunes {
 		if (messageRuneIdx == concatRuneLimit) || (idx == dataLen-1) {
@@ -183,6 +178,10 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 			}
 
 			body = string(messageRunes)
+
+			udhString := utils.GenerateUDHString(refNumber, messageNum, messageCounter+1)
+			typeDetails := messagebird.TypeDetails{"udh": udhString}
+			params := &messagebird.MessageParams{Type: "binary", TypeDetails: typeDetails}
 
 			mbMessage, err := wrap.postToMessageBird(message.Originator, recipients, body, params)
 			// Bail out if one of the messages fails
@@ -201,10 +200,10 @@ func (wrap *Wrapper) sendConcatMessage(message *Message, dataRunes []rune) ([]*m
 			messageCounter++
 			// When you serialize a slice with extra length it spits out garbage
 			if messageNum == messageCounter+1 {
-				messageRunes = make([]rune, concatRuneLimit)
-			} else {
 				remainingRunes := dataLen % concatRuneLimit
 				messageRunes = make([]rune, remainingRunes)
+			} else {
+				messageRunes = make([]rune, concatRuneLimit)
 			}
 			messageRuneIdx = 0
 		}

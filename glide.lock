@@ -1,102 +1,16 @@
-hash: 51ec9633c6267cb615cfb493b89456f3980ea3bb91fe1659ddbc260d32c3e787
-updated: 2018-06-20T12:13:30.783807+02:00
+hash: af9115711fdc5e0a5899614671ee950e814d4cccf4ef41c2b8d3ea24d268ec81
+updated: 2018-06-22T12:48:41.563708+02:00
 imports:
-- name: github.com/davecgh/go-spew
-  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
-  subpackages:
-  - spew
 - name: github.com/didip/tollbooth
   version: c95eaa3ddc98f635a91e218b48727fb2e06613ea
-  subpackages:
-  - errors
-  - libstring
-  - limiter
-- name: github.com/gorilla/context
-  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
 - name: github.com/gorilla/mux
   version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
-- name: github.com/jfo84/testify
-  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
-  subpackages:
-  - mock
 - name: github.com/messagebird/go-rest-api
   version: a505e01a7789c134e09737b4ed78aff748848259
 - name: github.com/onsi/ginkgo
   version: fa5fabab2a1bfbd924faf4c067d07ae414e2aedf
-  subpackages:
-  - config
-  - internal/codelocation
-  - internal/containernode
-  - internal/failer
-  - internal/leafnodes
-  - internal/remote
-  - internal/spec
-  - internal/spec_iterator
-  - internal/specrunner
-  - internal/suite
-  - internal/testingtproxy
-  - internal/writer
-  - reporters
-  - reporters/stenographer
-  - reporters/stenographer/support/go-colorable
-  - reporters/stenographer/support/go-isatty
-  - types
 - name: github.com/onsi/gomega
   version: 62bff4df71bdbc266561a0caee19f0594b17c240
-  subpackages:
-  - format
-  - internal/assertion
-  - internal/asyncassertion
-  - internal/oraclematcher
-  - internal/testingtsupport
-  - matchers
-  - matchers/support/goraph/bipartitegraph
-  - matchers/support/goraph/edge
-  - matchers/support/goraph/node
-  - matchers/support/goraph/util
-  - types
-- name: github.com/patrickmn/go-cache
-  version: 9f6ff22cfff829561052f5886ec80a2ac148b4eb
-- name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
-  subpackages:
-  - difflib
-- name: github.com/stretchr/objx
-  version: 0ab728f62c7f6fcd754334f7931c2dd659dce1d1
 - name: github.com/stretchr/testify
   version: f35b8ab0b5a2cef36673838d662e249dd9c94686
-  subpackages:
-  - assert
-- name: golang.org/x/time/rate
-  version: fbb02b2291d28baffd63558aa44b4b56f178d650
-testImports:
-- name: golang.org/x/net
-  version: b417086c80e91bfa321ef761574721644b8b9f61
-  subpackages:
-  - html
-  - html/atom
-  - html/charset
-- name: golang.org/x/sys
-  version: fc8bd948cf46f9c7af0f07d34151ce25fe90e477
-  subpackages:
-  - unix
-- name: golang.org/x/text
-  version: e19ae1496984b1c655b8044a65c0300a3c878dd3
-  subpackages:
-  - encoding
-  - encoding/charmap
-  - encoding/htmlindex
-  - encoding/internal
-  - encoding/internal/identifier
-  - encoding/japanese
-  - encoding/korean
-  - encoding/simplifiedchinese
-  - encoding/traditionalchinese
-  - encoding/unicode
-  - internal/tag
-  - internal/utf8internal
-  - language
-  - runes
-  - transform
-- name: gopkg.in/yaml.v2
-  version: d670f9405373e636a5a2765eea47fac0c9bc91a4
+testImports: []
